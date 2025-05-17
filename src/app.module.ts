@@ -20,18 +20,25 @@ import { Product } from './product/product.entity';
 import { Sale } from './sale/sale.entity';
 import { Purchase } from './purchase/purchase.entity';
 import { BulkSale } from './bulksale/bulksale.entity';
-import { ConfigModule as NestConfigModule } from '@nestjs/config';
+import {
+  ConfigService,
+  ConfigModule as NestConfigModule,
+} from '@nestjs/config';
 @Module({
   imports: [
-    TypeOrmModule.forRoot({
-      type: 'postgres',
-      host: 'localhost',
-      port: 5432,
-      username: 'postgres',
-      password: '123',
-      database: 'shop',
-      autoLoadEntities: true,
-      synchronize: true,
+    TypeOrmModule.forRootAsync({
+      imports: [NestConfigModule],
+      useFactory: (configService: ConfigService) => ({
+        type: 'postgres',
+        host: configService.get('DB_HOST'),
+        port: configService.get('DB_PORT'),
+        username: configService.get('DB_USERNAME'),
+        password: configService.get('DB_PASSWORD'),
+        database: configService.get('DB_NAME'),
+        autoLoadEntities: true,
+        synchronize: false,
+      }),
+      inject: [ConfigService],
     }),
     NestConfigModule.forRoot({
       isGlobal: true,
