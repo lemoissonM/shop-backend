@@ -1,24 +1,25 @@
-import { IsString, IsNumber, IsObject } from 'class-validator';
+import { IsString, IsNumber, IsArray } from 'class-validator';
+import { BulkPurchaseCost, BulkPurchaseItem } from '../purchase.entity';
 
 export class CreatePurchaseDto {
   @IsString()
-  shopId: string;
+  id: string;
 
   @IsString()
-  productId: string;
+  shopId: string;
 
   @IsNumber()
   date: number;
 
-  @IsNumber()
-  quantity: number;
-
-  @IsObject()
-  costs: Record<string, number>;
+  @IsArray()
+  costs: BulkPurchaseCost[];
 
   @IsNumber()
   totalCost: number;
 
-  @IsNumber()
-  unitPrice: number;
+  @IsString()
+  status: string;
+
+  @IsArray()
+  items: BulkPurchaseItem[];
 }

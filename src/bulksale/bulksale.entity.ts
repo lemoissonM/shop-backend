@@ -1,8 +1,8 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Entity, Column, PrimaryColumn } from 'typeorm';
 
 @Entity()
 export class BulkSale {
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryColumn('varchar')
   id: string;
 
   @Column()
@@ -33,4 +33,4 @@ export class BulkSale {
 
   @Column({ nullable: true })
   receiptQr: string;
-} 
+}

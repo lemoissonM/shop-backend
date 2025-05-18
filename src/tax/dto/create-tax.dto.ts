@@ -2,6 +2,9 @@ import { IsString, IsNumber, IsIn } from 'class-validator';
 
 export class CreateTaxDto {
   @IsString()
+  id: string;
+
+  @IsString()
   shopId: string;
 
   @IsString()

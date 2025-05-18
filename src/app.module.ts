@@ -24,6 +24,7 @@ import {
   ConfigService,
   ConfigModule as NestConfigModule,
 } from '@nestjs/config';
+import { JwtModule } from '@nestjs/jwt';
 @Module({
   imports: [
     TypeOrmModule.forRootAsync({
@@ -36,7 +37,7 @@ import {
         password: configService.get('DB_PASSWORD'),
         database: configService.get('DB_NAME'),
         autoLoadEntities: true,
-        synchronize: false,
+        synchronize: true,
       }),
       inject: [ConfigService],
     }),
@@ -53,6 +54,14 @@ import {
     AuthModule,
     UserModule,
     TypeOrmModule.forFeature([Product, Sale, Purchase, BulkSale]),
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        secret: config.get('JWT_SECRET', 'supersecret'),
+        signOptions: { expiresIn: '7d' },
+      }),
+    }),
   ],
   controllers: [AppController],
   providers: [

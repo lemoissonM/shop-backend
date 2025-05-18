@@ -10,5 +10,5 @@ export class CreateShopDto {
 
   @IsOptional()
   @IsString()
-  owner?: string;
+  ownerId?: string;
 }

@@ -1,8 +1,8 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Entity, Column, PrimaryColumn } from 'typeorm';
 
 @Entity()
 export class Tax {
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryColumn('varchar')
   id: string;
 
   @Column()

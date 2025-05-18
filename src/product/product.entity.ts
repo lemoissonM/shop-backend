@@ -1,8 +1,8 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Entity, Column, PrimaryColumn } from 'typeorm';
 
 @Entity()
 export class Product {
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryColumn({ type: 'varchar' })
   id: string;
 
   @Column()
@@ -40,4 +40,4 @@ export class Product {
 
   @Column('float', { nullable: true })
   unitSellingPrice: number;
-} 
+}

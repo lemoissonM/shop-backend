@@ -43,7 +43,7 @@ export class AuthService {
     const user = await this.userService.create({ ...data, password: hashed });
     const shop = await this.shopService.create({
       name: data.name || '',
-      owner: user.id,
+      ownerId: user.id,
     });
     return { user, shop };
   }
@@ -79,7 +79,7 @@ export class AuthService {
 
       await this.shopService.create({
         name: profile.name,
-        owner: user.id,
+        ownerId: user.id,
       });
     }
     return user;

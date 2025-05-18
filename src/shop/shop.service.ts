@@ -35,6 +35,10 @@ export class ShopService {
     return this.findOne(id);
   }
 
+  async findByOwnerId(ownerId: string): Promise<Shop | null> {
+    return this.shopRepository.findOneBy({ ownerId });
+  }
+
   async remove(id: string): Promise<void> {
     await this.shopRepository.delete(id);
   }

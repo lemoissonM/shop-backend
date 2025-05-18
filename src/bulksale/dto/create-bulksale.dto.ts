@@ -24,6 +24,9 @@ class BulkSaleItemDto {
 
 export class CreateBulksaleDto {
   @IsString()
+  id: string;
+
+  @IsString()
   shopId: string;
 
   @IsNumber()
