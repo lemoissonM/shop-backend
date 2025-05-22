@@ -16,6 +16,7 @@ import { SaleService } from './sale/sale.service';
 import { BulksaleService } from './bulksale/bulksale.service';
 import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
+import { LLMMessageModule } from './llmMessage/llmMessage.module';
 import { Product } from './product/product.entity';
 import { Sale } from './sale/sale.entity';
 import { Purchase } from './purchase/purchase.entity';
@@ -53,13 +54,14 @@ import { JwtModule } from '@nestjs/jwt';
     ShopModule,
     AuthModule,
     UserModule,
+    LLMMessageModule,
     TypeOrmModule.forFeature([Product, Sale, Purchase, BulkSale]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         secret: config.get('JWT_SECRET', 'supersecret'),
-        signOptions: { expiresIn: '7d' },
+        signOptions: { expiresIn: '30d' },
       }),
     }),
   ],

@@ -41,4 +41,7 @@ export class ProductService {
   async remove(id: string): Promise<void> {
     await this.productRepository.delete(id);
   }
+  async findByShopId(shopId: string): Promise<Product[]> {
+    return this.productRepository.findBy({ shopId });
+  }
 }

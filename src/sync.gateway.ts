@@ -17,6 +17,7 @@ import { UserService } from './user/user.service';
 import { ShopService } from './shop/shop.service';
 import { Shop } from './shop/shop.entity';
 import { User } from './user/user.entity';
+import { LLMMessageService } from './llmMessage/llmMessage.service';
 @WebSocketGateway({ cors: { origin: '*' } })
 @Injectable()
 export class SyncGateway {
@@ -31,6 +32,7 @@ export class SyncGateway {
     private readonly jwtService: JwtService,
     private readonly userService: UserService,
     private readonly shopService: ShopService,
+    private readonly llmMessageService: LLMMessageService,
   ) {}
 
   async handleAction(action: any, user: User, shop: Shop) {
@@ -110,6 +112,17 @@ export class SyncGateway {
             );
           case 'delete':
             return await this.purchaseService.remove(action.payload.id);
+        }
+        break;
+      case 'config':
+        switch (action.type) {
+          case 'update':
+            if (action.payload.name === 'shopName') {
+              return await this.shopService.update(shop.id, {
+                name: action.payload.value,
+              });
+            }
+            return { error: 'Unknown config' };
         }
         break;
     }
@@ -233,6 +246,26 @@ export class SyncGateway {
       console.log(error, 'error socket');
       return { status: 'error', result: null };
     }
+  }
+
+  @SubscribeMessage('llm-message')
+  async handleLlmMessage(
+    @MessageBody() data: { message: string },
+    @ConnectedSocket() client: Socket,
+  ) {
+    console.log(data, 'llm message');
+    // get the user and shop
+    const token = client.handshake.auth.token;
+    const { user } = await this.getUserAndShop(token);
+    // get the llm message
+    const llmMessage = await this.llmMessageService.create(
+      user.id,
+      data.message,
+    );
+    const result = await this.llmMessageService.processMessage(llmMessage.id);
+    // send the result to the client
+    client.emit('llm-response', result.result);
+    return { status: 'ok', result };
   }
 
   // on client connect
