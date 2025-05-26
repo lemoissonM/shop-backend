@@ -139,6 +139,8 @@ export class LLMMessageService {
             .flat()
         : [];
 
+      console.log(productsFromSaleOrPurchase, 'productsFromSaleOrPurchase');
+
       if (productsFromSaleOrPurchase.length > 0) {
         const productMatcher = await this.openai.chat.completions.create({
           model: 'gpt-4.1-nano',
@@ -218,6 +220,8 @@ export class LLMMessageService {
           return d;
         });
       }
+
+      console.log(llmMessage.result, 'llmMessage.result');
 
       llmMessage.status = 'completed';
       return this.llmMessageRepository.save(llmMessage);
