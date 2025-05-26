@@ -203,7 +203,8 @@ export class LLMMessageService {
         const productMatcherResult = JSON.parse(
           productMatcher.choices[0].message.content || '[]',
         );
-        const converted = llmMessage.result.actions.map((action: any) => {
+        console.log(productMatcherResult, 'productMatcherResult');
+        llmMessage.result.actions.map((action: any) => {
           const d = { ...action };
           for (const item of d.items) {
             const productId = productMatcherResult.products.find(
