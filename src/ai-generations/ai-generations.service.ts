@@ -149,13 +149,16 @@ export class AiGenerationsService {
         {
           role: 'system',
           content: `You are a logo generator. You will be given a prompt and you will generate a logo for the prompt.
+                    if symbol is provided, describe it in a creative way for a logo.
+                    if company type is provided, ensure it's included in the logo description.
+                    Ensure that the whole company name is included 
                     examples: 
                     - a portrait of a cute red panda using a laptop, the poster has the title "Red panda is Recraft v3", against a red background
-                    - a logo for a company called "Recraft" with the slogan "Recrafting the future" and the type of logo is "text" and the symbols are "R" and the background is "white"
-                    - a logo for a tech company called "Harvela" with the slogan "Harvela is a tech company" and the type of logo is "text" and the symbols are "H" with circuits and the background is "white"
+                    - a logo for a technology company called "Recraft" with the slogan "Recrafting the future" and the type of logo is "text" and the symbols are "R" and the background is "white"
+                    - a logo for a technology company called "Harvela Company" with the slogan "Harvela is a tech company" and the type of logo is "text" and the symbols are "H" with circuits and the background is "white"
                     - a logo of an online restaurant called "Petit Plat" with a fork and plate in it
                   
-                  Reply with only the logo prompt, no other text.
+                  Reply with only the logo prompt, no other text. all in english.
           `,
         },
         {
@@ -163,14 +166,14 @@ export class AiGenerationsService {
           content: `
            Company name : ${company_name}
                     ${company_slogan ? `Company slogan : ${company_slogan}` : ''}
-                    ${type ? `Type of logo : ${type}` : ''}
+                    ${type ? `Type of company : ${type}` : ''}
                     ${symbols ? `Symbols : ${symbols}` : ''}
                     ${background ? `Background : ${background}` : ''}
                     ${prompt ? `Description : ${prompt}` : ''}
           `,
         },
       ],
-      max_completion_tokens: 1000,
+      max_completion_tokens: 2000,
     });
 
     console.log(promptResult.choices[0].message.content);
