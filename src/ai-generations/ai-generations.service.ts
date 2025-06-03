@@ -173,6 +173,8 @@ export class AiGenerationsService {
       max_completion_tokens: 1000,
     });
 
+    console.log(promptResult.choices[0].message.content);
+
     const output = await this.callReplicateApi('recraft-ai/recraft-v3-svg', {
       prompt: promptResult.choices[0].message.content,
     });
