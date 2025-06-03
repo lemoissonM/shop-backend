@@ -8,6 +8,7 @@ import OpenAI from 'openai';
 import { ShopService } from 'src/shop/shop.service';
 import { ProductService } from 'src/product/product.service';
 import { systemPrompt } from './prompt';
+
 @Injectable()
 export class LLMMessageService {
   private openai: OpenAI;

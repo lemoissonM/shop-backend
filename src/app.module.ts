@@ -26,6 +26,8 @@ import {
   ConfigModule as NestConfigModule,
 } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
+import { AiGenerationsModule } from './ai-generations/ai-generations.module';
+import { FileModule } from './file/file.module';
 @Module({
   imports: [
     TypeOrmModule.forRootAsync({
@@ -64,6 +66,8 @@ import { JwtModule } from '@nestjs/jwt';
         signOptions: { expiresIn: '30d' },
       }),
     }),
+    AiGenerationsModule,
+    FileModule,
   ],
   controllers: [AppController],
   providers: [

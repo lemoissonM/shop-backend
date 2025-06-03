@@ -13,4 +13,13 @@ export class Shop {
 
   @Column({ nullable: true })
   ownerId: string;
+
+  @Column({ default: false })
+  hasOneTimePayment: boolean;
+
+  @Column({ nullable: true })
+  oneTimePaymentAmount: number;
+
+  @Column({ nullable: true })
+  oneTimePaymentDate: Date;
 }

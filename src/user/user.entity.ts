@@ -29,6 +29,12 @@ export class User {
   @Column({ nullable: true, type: 'bigint' })
   resetTokenExpiry: number;
 
+  @Column({ default: 0 })
+  generationCredits: number;
+
+  @Column({ default: 0 })
+  aiTokens: number;
+
   @CreateDateColumn()
   createdAt: Date;
 

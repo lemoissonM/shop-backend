@@ -38,6 +38,11 @@ export class AuthService {
     };
   }
 
+  async me(userId: string) {
+    const user = await this.userService.findById(userId);
+    return user;
+  }
+
   async signup(data: { email: string; password: string; name?: string }) {
     const hashed = await bcrypt.hash(data.password, 10);
     const user = await this.userService.create({ ...data, password: hashed });

@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthGuard } from '@nestjs/passport';
+import { JwtAuthGuard } from './jwt-auth.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -76,5 +77,11 @@ export class AuthController {
     const profile = await this.authService.getGoogleProfile(body.token);
     const user = await this.authService.findOrCreateGoogleUser(profile);
     return this.authService.login(user);
+  }
+
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  async me(@Req() req) {
+    return this.authService.me(req.user.userId);
   }
 }
