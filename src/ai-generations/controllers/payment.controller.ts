@@ -27,6 +27,18 @@ export class PaymentController {
     );
   }
 
+  @Post('card')
+  @UseGuards(JwtAuthGuard)
+  async createPaymentWithCard(
+    @Req() req,
+    @Body() paymentRequestDto: PaymentRequestDto,
+  ) {
+    return this.paymentService.createWithFlexPayCard(
+      paymentRequestDto,
+      req.user,
+    );
+  }
+
   @Post('webhook')
   async handleWebhook(@Body() webhookData: any) {
     return this.paymentService.processWebhook(webhookData);
@@ -42,5 +54,10 @@ export class PaymentController {
   @UseGuards(JwtAuthGuard)
   async getUserBalance(@Req() req) {
     return this.paymentService.getUserBalance(req.user.userId);
+  }
+
+  @Post('card/webhook')
+  async cardWebhook(@Body() webhookData: any) {
+    return this.paymentService.cardWebhook(webhookData);
   }
 }

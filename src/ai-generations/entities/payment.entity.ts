@@ -26,6 +26,9 @@ export class AiGenerationPayment {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Column({ nullable: true, default: 'Date.now()' })
+  reference: string;
+
   @Column()
   userId: string;
 
@@ -73,4 +76,4 @@ export class AiGenerationPayment {
 
   @UpdateDateColumn()
   updatedAt: Date;
-} 
+}

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
 import {
   Injectable,
   NotFoundException,
@@ -15,6 +16,9 @@ import { User } from '../../user/user.entity';
 import { Shop } from '../../shop/shop.entity';
 import { FlexPayService, ApiErrorResponse } from './flexpay.service';
 import { PaymentRequestDto } from '../dto/payment-request.dto';
+import axios from 'axios';
+import { HttpException, HttpStatus } from '@nestjs/common';
+import * as FormData from 'form-data';
 
 @Injectable()
 export class PaymentService {
@@ -276,5 +280,108 @@ export class PaymentService {
       generationCredits: user.generationCredits,
       aiTokens: user.aiTokens,
     };
+  }
+
+  async createWithFlexPayCard(paywithFlexPayDto: PaymentRequestDto, user: any) {
+    const paiement = await this.paymentRepository.save({
+      userId: user.userId,
+      amount: paywithFlexPayDto.amount,
+      status: PaymentStatus.PENDING,
+      type: PaymentType.CREDIT_PURCHASE,
+      credits: paywithFlexPayDto.amount,
+      tokens: 0,
+      shopId: paywithFlexPayDto.shopId,
+      phoneNumber: paywithFlexPayDto.phoneNumber,
+      currency: paywithFlexPayDto.currency || 'USD',
+      metadata: {
+        type: 'card',
+      },
+      reference: Date.now().toString(),
+    });
+
+    const data = new FormData();
+    data.append('merchant', 'HARV');
+    data.append('reference', paiement.reference);
+    data.append('amount', paiement.amount.toString());
+    data.append('currency', paiement.currency);
+    data.append('description', 'Payment for subscription');
+    data.append(
+      'callback_url',
+      'https://shop-backend.harvely.com/ai-generations/payment/card/webhook',
+    );
+    data.append('approve_url', 'https://ai.kaskd.com/payment/success');
+    data.append('cancel_url', 'https://ai.kaskd.com/payment/cancel');
+    data.append('decline_url', 'https://ai.kaskd.com/payment/decline');
+    data.append(
+      'authorization',
+      'Bearer ' + this.configService.get('FLEX_PAY_API_KEY'),
+    );
+    data.append(
+      'token',
+      'Bearer ' + this.configService.get('FLEX_PAY_API_KEY'),
+    );
+
+    const headers = {
+      ...data.getHeaders(),
+      authorization: 'Bearer ' + this.configService.get('FLEX_PAY_API_KEY'),
+      token: 'Bearer ' + this.configService.get('FLEX_PAY_API_KEY'),
+      Authorization: 'Bearer ' + this.configService.get('FLEX_PAY_API_KEY'),
+    };
+
+    try {
+      const response = await axios.post(
+        'https://cardpayment.flexpay.cd/v1/pay',
+        data,
+        {
+          headers,
+          maxBodyLength: Infinity,
+        },
+      );
+
+      console.log(response.data, 'response');
+
+      const linkMatch = response.data.match(
+        /href="(https:\/\/gwvisa\.flexpay\.cd[^"]+)"/,
+      ); // Regex to find the specific URL
+
+      if (linkMatch && linkMatch[1]) {
+        const link = linkMatch[1]; // Extracted URL
+        // open the link in a new tab
+        return { data: link };
+      } else {
+        throw new HttpException(
+          'Payment failed',
+          HttpStatus.INTERNAL_SERVER_ERROR,
+        );
+      }
+    } catch (error) {
+      console.error(error);
+      throw new HttpException(
+        'Payment failed',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async cardWebhook(webhookData: { code: number; reference: string }) {
+    console.log(webhookData, 'webhookData');
+    const payment = await this.paymentRepository.findOne({
+      where: { reference: webhookData.reference },
+    });
+    if (!payment) {
+      throw new NotFoundException('Payment not found');
+    }
+
+    if (webhookData.code === 0) {
+      await this.paymentRepository.update(payment.id, {
+        status: PaymentStatus.COMPLETED,
+      });
+    } else {
+      await this.paymentRepository.update(payment.id, {
+        status: PaymentStatus.FAILED,
+      });
+    }
+
+    return { message: 'Payment processed successfully', success: true };
   }
 }
