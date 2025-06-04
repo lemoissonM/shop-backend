@@ -304,7 +304,7 @@ export class PaymentService {
     data.append('reference', paiement.reference);
     data.append('amount', paiement.amount.toString());
     data.append('currency', paiement.currency);
-    data.append('description', 'Payment for subscription');
+    data.append('description', 'Achat de crédits');
     data.append(
       'callback_url',
       'https://shop-backend.harvely.com/ai-generations/payment/card/webhook',
