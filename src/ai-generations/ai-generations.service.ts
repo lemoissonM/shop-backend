@@ -107,19 +107,26 @@ export class AiGenerationsService {
     changeHairstyleDto: ChangeHairstyleDto,
   ): Promise<GenerationResponse> {
     const { haircut, hair_color, input_image } = changeHairstyleDto;
+    console.log(haircut, hair_color, input_image);
+    try {
+      const output = await this.callReplicateApi(
+        'flux-kontext-apps/change-haircut',
+        {
+          haircut: haircut || 'Random',
+          hair_color: hair_color || 'Random',
+          input_image,
+        },
+      );
 
-    const output = await this.callReplicateApi(
-      'flux-kontext-apps/change-haircut',
-      {
-        haircut: haircut || 'Random',
-        hair_color: hair_color || 'Random',
-        input_image,
-      },
-    );
-
-    return {
-      url: output,
-    };
+      return {
+        url: output,
+      };
+    } catch (error) {
+      console.error('Error calling Replicate API:', error);
+      throw new InternalServerErrorException(
+        'Error calling Replicate API: ' + error.message,
+      );
+    }
   }
 
   async upscaleImage(
