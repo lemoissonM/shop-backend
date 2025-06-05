@@ -46,7 +46,7 @@ export class CreditService {
     // Return the updated user
     return {
       ...user,
-      [creditType]: user[creditType] - amount,
+      [creditType]: Number(user[creditType]) - Number(amount),
     };
   }
 
@@ -72,14 +72,14 @@ export class CreditService {
 
     // Update the user's credits
     const updateData = {};
-    updateData[creditType] = user[creditType] + amount;
+    updateData[creditType] = Number(user[creditType]) + Number(amount);
 
     await this.userRepository.update(userId, updateData);
 
     // Return the updated user
     return {
       ...user,
-      [creditType]: user[creditType] + amount,
+      [creditType]: Number(user[creditType]) + Number(amount),
     };
   }
 

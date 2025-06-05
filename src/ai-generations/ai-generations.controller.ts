@@ -89,11 +89,11 @@ export class AiGenerationsController {
 
   @Post('logo')
   @UseGuards(JwtAuthGuard, CheckCreditGuard)
-  @RequireCredits(0.5, CreditType.GENERATION_CREDITS)
+  @RequireCredits(3, CreditType.GENERATION_CREDITS)
   async generateLogo(@Body() logoDto: LogoDto, @Req() req) {
     await this.creditService.deductCredits(
       req.user.userId,
-      0.5,
+      3,
       CreditType.GENERATION_CREDITS,
     );
     return this.aiGenerationsService.generateLogo(logoDto);
