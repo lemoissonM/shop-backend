@@ -57,4 +57,22 @@ export class FileController {
   ) {
     return this.fileService.uploadBase64Image(base64Image, filename);
   }
+
+  @Post('upload-local')
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadLocalFile(
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }), // 5MB
+          new FileTypeValidator({ fileType: /(jpg|jpeg|png|gif|webp)$/ }),
+        ],
+      }),
+    )
+    file: Express.Multer.File,
+  ) {
+    // Images larger than 2MB will be automatically resized
+    return this.fileService.uploadLocalFile(file);
+  }
 }

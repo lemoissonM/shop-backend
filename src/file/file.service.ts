@@ -1,6 +1,9 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { CloudinaryConfigService } from './configs/cloudinary.config';
 import { ConfigService } from '@nestjs/config';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as sharp from 'sharp';
 
 @Injectable()
 export class FileService {
@@ -47,7 +50,7 @@ export class FileService {
 
     try {
       // Upload all files in parallel
-      const uploadPromises = files.map(file =>
+      const uploadPromises = files.map((file) =>
         this.cloudinaryConfig.uploadBuffer(
           file.buffer,
           'ai-generations',
@@ -80,14 +83,11 @@ export class FileService {
 
     try {
       // Remove data URL prefix if present
-      const base64Data = base64Image.replace(
-        /^data:image\/\w+;base64,/,
-        '',
-      );
-      
+      const base64Data = base64Image.replace(/^data:image\/\w+;base64,/, '');
+
       // Convert base64 to buffer
       const buffer = Buffer.from(base64Data, 'base64');
-      
+
       // Upload to Cloudinary
       const url = await this.cloudinaryConfig.uploadBuffer(
         buffer,
@@ -99,6 +99,69 @@ export class FileService {
     } catch (error) {
       throw new BadRequestException(
         `Failed to upload base64 image: ${error.message || 'Unknown error'}`,
+      );
+    }
+  }
+
+  /**
+   * Upload a file to local public/images directory
+   * @param file File from multer
+   * @returns URL of the uploaded file
+   */
+  async uploadLocalFile(file: Express.Multer.File): Promise<{ url: string }> {
+    if (!file) {
+      throw new BadRequestException('No file provided');
+    }
+
+    try {
+      // Create public/images directory if it doesn't exist
+      const publicDir = path.join(process.cwd(), 'public');
+      const imagesDir = path.join(publicDir, 'images');
+
+      if (!fs.existsSync(publicDir)) {
+        fs.mkdirSync(publicDir);
+      }
+
+      if (!fs.existsSync(imagesDir)) {
+        fs.mkdirSync(imagesDir);
+      }
+
+      // Generate a unique filename to prevent overwriting
+      const timestamp = Date.now();
+      const uniqueFilename = `${timestamp}-${file.originalname.replace(/\s+/g, '-')}`;
+      const filePath = path.join(imagesDir, uniqueFilename);
+
+      // Check file size (2MB = 2 * 1024 * 1024 bytes)
+      const MAX_SIZE = 2 * 1024 * 1024;
+      let fileBuffer = file.buffer;
+
+      // If file is larger than 2MB, resize it
+      if (file.buffer.length > MAX_SIZE) {
+        // Process image with sharp
+        fileBuffer = await sharp(file.buffer)
+          .resize({
+            width: 1200, // Resize to max width of 1200px
+            height: 1200, // Resize to max height of 1200px
+            fit: 'inside', // Maintain aspect ratio
+            withoutEnlargement: true, // Don't enlarge images smaller than these dimensions
+          })
+          .jpeg({ quality: 80 }) // Convert to JPEG with 80% quality
+          .toBuffer();
+      }
+
+      // Write the file to disk
+      fs.writeFileSync(filePath, fileBuffer);
+
+      // Generate and return the URL
+      const baseUrl =
+        this.configService.get('BASE_URL') ||
+        'https://shop-backend.harvely.com';
+      const url = `${baseUrl}/images/${uniqueFilename}`;
+
+      return { url };
+    } catch (error) {
+      throw new BadRequestException(
+        `Failed to upload file locally: ${error.message || 'Unknown error'}`,
       );
     }
   }

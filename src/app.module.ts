@@ -28,6 +28,9 @@ import {
 import { JwtModule } from '@nestjs/jwt';
 import { AiGenerationsModule } from './ai-generations/ai-generations.module';
 import { FileModule } from './file/file.module';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
+
 @Module({
   imports: [
     TypeOrmModule.forRootAsync({
@@ -46,6 +49,10 @@ import { FileModule } from './file/file.module';
     }),
     NestConfigModule.forRoot({
       isGlobal: true,
+    }),
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', 'public'),
+      serveRoot: '/',
     }),
     ProductModule,
     PurchaseModule,
