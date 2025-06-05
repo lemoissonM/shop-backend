@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import axios from 'axios';
 import { MultiImageDto } from './dto/multi-image.dto';
 import { ProfessionalPhotoDto } from './dto/professional-photo.dto';
@@ -127,21 +127,34 @@ export class AiGenerationsService {
   ): Promise<GenerationResponse> {
     const { input_image } = upscaleImageDto;
 
-    const output = await this.callReplicateApi(
-      'flux-kontext-apps/restore-image',
-      {
-        input_image,
-      },
-    );
+    try {
+      const output = await this.callReplicateApi(
+        'flux-kontext-apps/restore-image',
+        {
+          input_image,
+        },
+      );
 
-    return {
-      url: output,
-    };
+      return {
+        url: output,
+      };
+    } catch (error) {
+      console.error('Error calling Replicate API:', error);
+      throw new InternalServerErrorException(
+        'Error calling Replicate API: ' + error.message,
+      );
+    }
   }
 
-  async generateLogo(logoDto: LogoDto): Promise<GenerationResponse> {
+  async generateLogo(logoDto: LogoDto) {
     const { prompt, type, symbols, background, company_name, company_slogan } =
       logoDto;
+
+    // return {urls:[
+    //   'https://replicate.delivery/xezq/QJBerPdHIc3FXyvdr3tGdzUUfbojiGBOdcuyZ8o3n0iweinpA/tmpiwtbqz5z.svg',
+    //   'https://replicate.delivery/xezq/7xfNX1EK3gWIWa5TG35pNRtV7zx7BfGG97Cdgn1gB6YxeinpA/tmpv36m_y3d.svg',
+    //   'https://replicate.delivery/xezq/p3TMQgBqP0JgHBiCcseuu8z1ksPf8a9zR93Q0zbE7OpweinpA/tmpkwag470u.svg',
+    // ]};
 
     const promptResult = await this.openai.chat.completions.create({
       model: 'gpt-4o-mini',
@@ -178,12 +191,20 @@ export class AiGenerationsService {
 
     console.log(promptResult.choices[0].message.content);
 
-    const output = await this.callReplicateApi('recraft-ai/recraft-v3-svg', {
-      prompt: promptResult.choices[0].message.content,
-    });
+    const output = await Promise.all([
+      this.callReplicateApi('recraft-ai/recraft-v3-svg', {
+        prompt: promptResult.choices[0].message.content,
+      }),
+      this.callReplicateApi('recraft-ai/recraft-v3-svg', {
+        prompt: promptResult.choices[0].message.content,
+      }),
+      this.callReplicateApi('recraft-ai/recraft-v3-svg', {
+        prompt: promptResult.choices[0].message.content,
+      }),
+    ]);
 
     return {
-      url: output,
+      urls: output,
     };
   }
 }

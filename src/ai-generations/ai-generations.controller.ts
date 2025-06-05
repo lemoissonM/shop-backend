@@ -90,10 +90,7 @@ export class AiGenerationsController {
   @Post('logo')
   @UseGuards(JwtAuthGuard, CheckCreditGuard)
   @RequireCredits(0.5, CreditType.GENERATION_CREDITS)
-  async generateLogo(
-    @Body() logoDto: LogoDto,
-    @Req() req,
-  ): Promise<GenerationResponse> {
+  async generateLogo(@Body() logoDto: LogoDto, @Req() req) {
     await this.creditService.deductCredits(
       req.user.userId,
       0.5,
