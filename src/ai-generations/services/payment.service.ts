@@ -301,14 +301,11 @@ export class PaymentService {
 
     const data = new FormData();
     data.append('merchant', 'HARV');
-    data.append('reference', paiement.reference);
+    data.append('reference', 'HARV-' + paiement.reference);
     data.append('amount', paiement.amount.toString());
     data.append('currency', paiement.currency);
     data.append('description', 'Achat de crédits');
-    data.append(
-      'callback_url',
-      'https://shop-backend.harvely.com/ai-generations/payment/card/webhook',
-    );
+    data.append('callback_url', 'https://bot.harvely.com/');
     data.append('approve_url', 'https://ai.kaskd.com/payment/success');
     data.append('cancel_url', 'https://ai.kaskd.com/payment/cancel');
     data.append('decline_url', 'https://ai.kaskd.com/payment/decline');
