@@ -39,7 +39,7 @@ export class AiGenerationsController {
 
   @Post('professional-photo')
   @UseGuards(JwtAuthGuard, CheckCreditGuard)
-  @RequireCredits(1.5, CreditType.GENERATION_CREDITS)
+  @RequireCredits(0.1, CreditType.GENERATION_CREDITS)
   async generateProfessionalPhoto(
     @Body() professionalPhotoDto: ProfessionalPhotoDto,
     @Req() req,
@@ -47,7 +47,7 @@ export class AiGenerationsController {
     // Deduct credits after successful generation
     await this.creditService.deductCredits(
       req.user.userId,
-      1.5,
+      0.1,
       CreditType.GENERATION_CREDITS,
     );
     return this.aiGenerationsService.generateProfessionalPhoto(
@@ -89,14 +89,14 @@ export class AiGenerationsController {
 
   @Post('logo')
   @UseGuards(JwtAuthGuard, CheckCreditGuard)
-  @RequireCredits(0.1, CreditType.GENERATION_CREDITS)
+  @RequireCredits(0.5, CreditType.GENERATION_CREDITS)
   async generateLogo(
     @Body() logoDto: LogoDto,
     @Req() req,
   ): Promise<GenerationResponse> {
     await this.creditService.deductCredits(
       req.user.userId,
-      0.1,
+      0.5,
       CreditType.GENERATION_CREDITS,
     );
     return this.aiGenerationsService.generateLogo(logoDto);
