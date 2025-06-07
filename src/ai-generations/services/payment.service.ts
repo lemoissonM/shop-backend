@@ -15,10 +15,13 @@ import {
 import { User } from '../../user/user.entity';
 import { Shop } from '../../shop/shop.entity';
 import { FlexPayService, ApiErrorResponse } from './flexpay.service';
+import { PawaPayService } from './pawapay.service';
+import { CurrencyConversionService } from './currency-conversion.service';
 import { PaymentRequestDto } from '../dto/payment-request.dto';
 import axios from 'axios';
 import { HttpException, HttpStatus } from '@nestjs/common';
 import * as FormData from 'form-data';
+import { correspondent, countryCodeMap } from './correspondant';
 
 @Injectable()
 export class PaymentService {
@@ -30,14 +33,17 @@ export class PaymentService {
     @InjectRepository(Shop)
     private shopRepository: Repository<Shop>,
     private flexPayService: FlexPayService,
+    private pawaPayService: PawaPayService,
+    private currencyConversionService: CurrencyConversionService,
     private configService: ConfigService,
   ) {}
 
-  // Helper function to calculate credits based on amount
-  private calculateCredits(amount: number): number {
+  // Helper function to calculate credits based on amount in USD
+  private calculateCredits(amount: number, currency: string): number {
     // Example pricing: $10 = 100 credits, $20 = 225 credits, etc.
     // You can adjust this calculation as needed
-    return Math.floor(amount * 100);
+    const rate = this.currencyConversionService.getRates()[currency];
+    return Math.floor(amount / (rate * 0.01));
   }
 
   // Helper function to calculate tokens based on amount
@@ -46,12 +52,14 @@ export class PaymentService {
     return Math.floor(amount * 100);
   }
 
-  private formatPhoneNumber(phone: string): string {
+  private formatPhoneNumber(phone: string, countryCode: string): string {
     const phoneNumber = phone.toString().replace(/\D/g, '').replace(/^0/, '');
-    if (phoneNumber.startsWith('243')) {
+    if (phoneNumber.startsWith(countryCode)) {
       return '' + phoneNumber;
+    } else if (phoneNumber.startsWith('0')) {
+      return countryCode + phoneNumber.slice(1);
     }
-    return '243' + phoneNumber;
+    return countryCode + phoneNumber;
   }
 
   // Create a new payment
@@ -64,19 +72,25 @@ export class PaymentService {
       throw new NotFoundException('User not found');
     }
 
+    const currency = paymentRequestDto.currency || 'USD';
+    const amountInUSD = this.currencyConversionService.convertToUSD(
+      paymentRequestDto.amount,
+      currency,
+    );
+
     let credits = 0;
     let tokens = 0;
 
     // Calculate credits or tokens based on payment type
     if (paymentRequestDto.type === PaymentType.CREDIT_PURCHASE) {
-      credits = this.calculateCredits(paymentRequestDto.amount);
+      credits = this.calculateCredits(amountInUSD, currency);
       if (credits === 0) {
         throw new BadRequestException(
           'Minimum payment amount for credits is $1',
         );
       }
     } else if (paymentRequestDto.type === PaymentType.TOKEN_PURCHASE) {
-      tokens = this.calculateTokens(paymentRequestDto.amount);
+      tokens = this.calculateTokens(amountInUSD);
       if (tokens === 0) {
         throw new BadRequestException(
           'Minimum payment amount for tokens is $1',
@@ -112,7 +126,7 @@ export class PaymentService {
       tokens,
       shopId: paymentRequestDto.shopId,
       phoneNumber: paymentRequestDto.phoneNumber,
-      currency: paymentRequestDto.currency || 'USD',
+      currency: currency,
       metadata: {},
     });
 
@@ -123,7 +137,7 @@ export class PaymentService {
       // Call FlexPay service to initiate payment
       const flexPayResponse = await this.flexPayService.pay({
         amount: payment.amount.toString(),
-        phone: this.formatPhoneNumber(payment.phoneNumber),
+        phone: this.formatPhoneNumber(payment.phoneNumber, '243'),
         reference: payment.id,
         currency: payment.currency,
       });
@@ -232,15 +246,24 @@ export class PaymentService {
   // Get payment status
   async getPaymentStatus(paymentId: string, userId: string): Promise<any> {
     const payment = await this.paymentRepository.findOne({
-      where: { id: paymentId },
+      where: { id: paymentId, userId },
     });
     if (!payment) {
       throw new NotFoundException('Payment not found');
     }
 
-    // Ensure the payment belongs to the user (unless they're an admin, which you'd need to check separately)
-    if (payment.userId !== userId) {
-      throw new BadRequestException('Access denied');
+    if (payment.metadata?.provider === 'pawapay' && payment.reference) {
+      const status = (
+        await this.pawaPayService.checkDepositStatus(payment.reference)
+      )[0];
+      // Potentially update local payment status based on pawaPay status
+      if (
+        status.status === 'COMPLETED' &&
+        payment.status !== PaymentStatus.COMPLETED
+      ) {
+        await this.pawaPayWebhook(status);
+      }
+      return status;
     }
 
     if (payment.metadata?.flexPayOrderNumber) {
@@ -380,5 +403,121 @@ export class PaymentService {
     }
 
     return { message: 'Payment processed successfully', success: true };
+  }
+
+  async createPawaPayPayment(
+    userId: string,
+    paymentRequestDto: PaymentRequestDto,
+  ): Promise<any> {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (isNaN(paymentRequestDto.amount) || paymentRequestDto.amount <= 0) {
+      throw new BadRequestException('Invalid payment amount');
+    }
+
+    const currency = paymentRequestDto.currency || 'USD'; // Default for PawaPay
+
+    const payment = this.paymentRepository.create({
+      userId,
+      amount: paymentRequestDto.amount,
+      status: PaymentStatus.PENDING,
+      type: PaymentType.CREDIT_PURCHASE, // Assuming credit purchase for now
+      credits: this.calculateCredits(paymentRequestDto.amount, currency),
+      phoneNumber: paymentRequestDto.phoneNumber,
+      currency: currency,
+      metadata: {
+        provider: 'pawapay',
+        correspondent: paymentRequestDto.correspondent,
+      },
+    });
+
+    const savedPayment = await this.paymentRepository.save(payment);
+
+    const cor = paymentRequestDto.correspondent;
+    if (!cor) {
+      throw new BadRequestException('Correspondent is required');
+    }
+    const countryCode =
+      countryCodeMap[cor.country as keyof typeof countryCodeMap];
+
+    if (!countryCode) {
+      throw new BadRequestException('Invalid country');
+    }
+    try {
+      const pawaPayResponse = await this.pawaPayService.requestDeposit({
+        amount: savedPayment.amount.toString(),
+        country: cor.country,
+        currency: cor.currency,
+        correspondent: cor.network,
+        payer: {
+          type: 'MSISDN',
+          address: {
+            value: this.formatPhoneNumber(
+              savedPayment.phoneNumber,
+              countryCode,
+            ),
+          },
+        },
+        statementDescription: 'Credit Purchase',
+      });
+
+      const paymentToUpdate = await this.paymentRepository.findOne({
+        where: { id: savedPayment.id },
+      });
+      if (paymentToUpdate) {
+        paymentToUpdate.reference = pawaPayResponse.depositId;
+        paymentToUpdate.metadata.depositId = pawaPayResponse.depositId;
+        await this.paymentRepository.save(paymentToUpdate);
+        return paymentToUpdate;
+      }
+      return savedPayment;
+    } catch (error) {
+      await this.paymentRepository.update(savedPayment.id, {
+        status: PaymentStatus.FAILED,
+        metadata: {
+          ...savedPayment.metadata,
+          error: error.message,
+        },
+      });
+      throw new BadRequestException(
+        `Error while processing PawaPay payment: ${error.message}`,
+      );
+    }
+  }
+
+  async pawaPayWebhook(webhookData: any): Promise<any> {
+    const { depositId, status } = webhookData;
+    const payment = await this.paymentRepository.findOne({
+      where: { reference: depositId },
+    });
+    if (!payment) {
+      throw new NotFoundException('Payment not found for depositId');
+    }
+
+    const user = await this.userRepository.findOne({
+      where: { id: payment.userId },
+    });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (status === 'COMPLETED') {
+      payment.status = PaymentStatus.COMPLETED;
+      payment.metadata.webhookData = webhookData;
+
+      if (payment.type === PaymentType.CREDIT_PURCHASE) {
+        user.generationCredits += payment.credits;
+        await this.userRepository.save(user);
+      }
+    } else {
+      payment.status = PaymentStatus.FAILED;
+      payment.metadata.error = 'PawaPay payment failed or was cancelled';
+      payment.metadata.errorDetails = webhookData;
+    }
+    await this.paymentRepository.save(payment);
+    return { message: 'PawaPay webhook processed' };
   }
 }

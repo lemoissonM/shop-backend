@@ -23,7 +23,7 @@ export class AiGenerationsController {
 
   @Post('multi-image')
   @UseGuards(JwtAuthGuard, CheckCreditGuard)
-  @RequireCredits(0.1, CreditType.GENERATION_CREDITS)
+  @RequireCredits(10, CreditType.GENERATION_CREDITS)
   async generateMultiImage(
     @Body() multiImageDto: MultiImageDto,
     @Req() req,
@@ -31,7 +31,7 @@ export class AiGenerationsController {
     // Deduct credits after successful generation
     await this.creditService.deductCredits(
       req.user.userId,
-      0.1,
+      10,
       CreditType.GENERATION_CREDITS,
     );
     return this.aiGenerationsService.generateMultiImage(multiImageDto);
@@ -39,7 +39,7 @@ export class AiGenerationsController {
 
   @Post('professional-photo')
   @UseGuards(JwtAuthGuard, CheckCreditGuard)
-  @RequireCredits(0.1, CreditType.GENERATION_CREDITS)
+  @RequireCredits(10, CreditType.GENERATION_CREDITS)
   async generateProfessionalPhoto(
     @Body() professionalPhotoDto: ProfessionalPhotoDto,
     @Req() req,
@@ -47,7 +47,7 @@ export class AiGenerationsController {
     // Deduct credits after successful generation
     await this.creditService.deductCredits(
       req.user.userId,
-      0.1,
+      10,
       CreditType.GENERATION_CREDITS,
     );
     return this.aiGenerationsService.generateProfessionalPhoto(
@@ -57,7 +57,7 @@ export class AiGenerationsController {
 
   @Post('change-hairstyle')
   @UseGuards(JwtAuthGuard, CheckCreditGuard)
-  @RequireCredits(0.1, CreditType.GENERATION_CREDITS)
+  @RequireCredits(25, CreditType.GENERATION_CREDITS)
   async changeHairstyle(
     @Body() changeHairstyleDto: ChangeHairstyleDto,
     @Req() req,
@@ -65,7 +65,7 @@ export class AiGenerationsController {
     // Deduct credits after successful generation
     await this.creditService.deductCredits(
       req.user.userId,
-      0.1,
+      25,
       CreditType.GENERATION_CREDITS,
     );
     return this.aiGenerationsService.changeHairstyle(changeHairstyleDto);
@@ -73,7 +73,7 @@ export class AiGenerationsController {
 
   @Post('upscale-image')
   @UseGuards(JwtAuthGuard, CheckCreditGuard)
-  @RequireCredits(0.1, CreditType.GENERATION_CREDITS) // Higher quality costs more credits
+  @RequireCredits(10, CreditType.GENERATION_CREDITS) // Higher quality costs more credits
   async upscaleImage(
     @Body() upscaleImageDto: UpscaleImageDto,
     @Req() req,
@@ -81,7 +81,7 @@ export class AiGenerationsController {
     // Deduct credits after successful generation
     await this.creditService.deductCredits(
       req.user.userId,
-      0.1,
+      10,
       CreditType.GENERATION_CREDITS,
     );
     return this.aiGenerationsService.upscaleImage(upscaleImageDto);
@@ -89,11 +89,11 @@ export class AiGenerationsController {
 
   @Post('logo')
   @UseGuards(JwtAuthGuard, CheckCreditGuard)
-  @RequireCredits(3, CreditType.GENERATION_CREDITS)
+  @RequireCredits(150, CreditType.GENERATION_CREDITS)
   async generateLogo(@Body() logoDto: LogoDto, @Req() req) {
     await this.creditService.deductCredits(
       req.user.userId,
-      3,
+      150,
       CreditType.GENERATION_CREDITS,
     );
     return this.aiGenerationsService.generateLogo(logoDto);

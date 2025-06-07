@@ -18,4 +18,12 @@ export class PaymentRequestDto {
   @IsString()
   @IsOptional()
   shopId?: string;
-} 
+
+  @IsString()
+  @IsOptional()
+  correspondent?: {
+    currency: string;
+    network: string;
+    country: string;
+  };
+}
