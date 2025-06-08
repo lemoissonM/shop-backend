@@ -9,6 +9,8 @@ import { ConfigService } from '@nestjs/config';
 import { multiImagePrompt } from './prompt';
 import { LogoDto } from './dto/logo.dto';
 import OpenAI from 'openai';
+import { join } from 'path';
+import * as fs from 'fs';
 
 @Injectable()
 export class AiGenerationsService {
@@ -105,6 +107,7 @@ export class AiGenerationsService {
 
   async changeHairstyle(
     changeHairstyleDto: ChangeHairstyleDto,
+    userId: string,
   ): Promise<GenerationResponse> {
     const { haircut, hair_color, input_image } = changeHairstyleDto;
     console.log(haircut, hair_color, input_image);
@@ -118,8 +121,15 @@ export class AiGenerationsService {
         },
       );
 
+      // download the output and save it to /public/images
+      const response = await axios.get(output, { responseType: 'stream' });
+      const fileName = `${userId}-${Date.now()}.png`;
+      const filePath = join(process.cwd(), 'public', 'images', fileName);
+      const writer = fs.createWriteStream(filePath);
+      response.data.pipe(writer);
+
       return {
-        url: output,
+        url: `${process.env.BACKEND || 'http://localhost:8001'}/images/${fileName}`,
       };
     } catch (error) {
       console.error('Error calling Replicate API:', error);
@@ -153,7 +163,7 @@ export class AiGenerationsService {
     }
   }
 
-  async generateLogo(logoDto: LogoDto) {
+  async generateLogo(logoDto: LogoDto, userId: string) {
     const { prompt, type, symbols, background, company_name, company_slogan } =
       logoDto;
 
@@ -168,17 +178,22 @@ export class AiGenerationsService {
       messages: [
         {
           role: 'system',
-          content: `You are a logo generator. You will be given a prompt and you will generate a logo for the prompt.
-                    if symbol is provided, describe it in a creative way for a logo.
-                    if company type is provided, ensure it's included in the logo description.
-                    Ensure that the whole company name is included 
-                    examples: 
-                    - a portrait of a cute red panda using a laptop, the poster has the title "Red panda is Recraft v3", against a red background
-                    - a logo for a technology company called "Recraft" with the slogan "Recrafting the future" and the type of logo is "text" and the symbols are "R" and the background is "white"
-                    - a logo for a technology company called "Harvela Company" with the slogan "Harvela is a tech company" and the type of logo is "text" and the symbols are "H" with circuits and the background is "white"
-                    - a logo of an online restaurant called "Petit Plat" with a fork and plate in it
-                  
-                  Reply with only the logo prompt, no other text. all in english.
+          content: `You are an elite brand designer specializing in luxury and iconic logo creation for global brands. For each prompt, craft a highly detailed, modern, and visually striking logo description that embodies the company’s unique identity at the highest level, akin to the design work for brands like LVMH, Lamborghini, or Apple.
+
+Requirements for each logo prompt:
+
+If symbols are provided, reinterpret them in a sophisticated, creative, and visually impactful way suitable for a world-class logo.
+If a company type or industry is given, ensure the logo style, mood, and details resonate deeply with that sector.
+Always include the full company name clearly within the logo description.
+If a slogan is provided, describe how it is stylishly incorporated.
+State the logo type (e.g., wordmark, emblem, monogram, pictorial mark) only if specified.
+Assume premium, minimalism, and timelessness unless otherwise indicated.
+Describe the color palette and background, emphasizing harmony and modern aesthetic.
+make it consize.
+Maintain simplicity and elegance. Do not add flours, complex forms, or unnecessary details.
+no more than 50 words.
+Focus on unique and memorable details that set the brand apart at a global level.
+Reply only with the highly refined logo prompt in English, no additional explanations or introductory text.
           `,
         },
         {
@@ -200,18 +215,45 @@ export class AiGenerationsService {
 
     const output = await Promise.all([
       this.callReplicateApi('recraft-ai/recraft-v3-svg', {
-        prompt: promptResult.choices[0].message.content,
+        prompt: `${promptResult.choices[0].message.content}
+        Do not add frames or background.
+        Just symbols.
+        Modern , elegant and luxury.
+        `,
       }),
       this.callReplicateApi('recraft-ai/recraft-v3-svg', {
-        prompt: promptResult.choices[0].message.content,
+        prompt: `${promptResult.choices[0].message.content}
+        branding for rich people.
+        Just symbols.
+        Well spaced. 
+        Minimalist.
+        `,
       }),
       this.callReplicateApi('recraft-ai/recraft-v3-svg', {
-        prompt: promptResult.choices[0].message.content,
+        prompt: `${promptResult.choices[0].message.content}
+        Simple frames .
+        artist drawing. 
+        Minimalist.
+        `,
       }),
     ]);
 
+    const urls: string[] = [];
+    // download outputs and save them to /public/logos
+    for (const url of output) {
+      const response = await axios.get(url, { responseType: 'stream' });
+      const fileName = `${userId}-me-${Date.now()}.svg`;
+      const filePath = join(process.cwd(), 'public', 'logos', fileName);
+      const writer = fs.createWriteStream(filePath);
+      response.data.pipe(writer);
+      urls.push(
+        `${process.env.BACKEND || 'http://localhost:8001'}/logos/${fileName}`,
+      );
+    }
+
+    // return the urls
     return {
-      urls: output,
+      urls,
     };
   }
 }

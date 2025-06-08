@@ -57,7 +57,7 @@ export class AiGenerationsController {
 
   @Post('change-hairstyle')
   @UseGuards(JwtAuthGuard, CheckCreditGuard)
-  @RequireCredits(25, CreditType.GENERATION_CREDITS)
+  @RequireCredits(7, CreditType.GENERATION_CREDITS)
   async changeHairstyle(
     @Body() changeHairstyleDto: ChangeHairstyleDto,
     @Req() req,
@@ -65,10 +65,13 @@ export class AiGenerationsController {
     // Deduct credits after successful generation
     await this.creditService.deductCredits(
       req.user.userId,
-      25,
+      7,
       CreditType.GENERATION_CREDITS,
     );
-    return this.aiGenerationsService.changeHairstyle(changeHairstyleDto);
+    return this.aiGenerationsService.changeHairstyle(
+      changeHairstyleDto,
+      req.user.userId,
+    );
   }
 
   @Post('upscale-image')
@@ -96,6 +99,6 @@ export class AiGenerationsController {
       150,
       CreditType.GENERATION_CREDITS,
     );
-    return this.aiGenerationsService.generateLogo(logoDto);
+    return this.aiGenerationsService.generateLogo(logoDto, req.user.userId);
   }
 }

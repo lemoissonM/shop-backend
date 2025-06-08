@@ -4,6 +4,7 @@
 /build
 
 /public/images
+/public/logos
 
 # Logs
 logs
