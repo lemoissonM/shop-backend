@@ -26,4 +26,8 @@ export class PaymentRequestDto {
     network: string;
     country: string;
   };
+
+  @IsString()
+  @IsOptional()
+  trainingRegistrationId?: string;
 }

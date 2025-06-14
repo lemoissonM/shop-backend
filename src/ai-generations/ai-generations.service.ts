@@ -4,6 +4,8 @@ import { MultiImageDto } from './dto/multi-image.dto';
 import { ProfessionalPhotoDto } from './dto/professional-photo.dto';
 import { ChangeHairstyleDto } from './dto/change-hairstyle.dto';
 import { UpscaleImageDto } from './dto/upscale-image.dto';
+import { TextToVideoDto } from './dto/text-to-video.dto';
+import { ImageToVideoDto } from './dto/image-to-video.dto';
 import { GenerationResponse } from './interfaces/generation-response.interface';
 import { ConfigService } from '@nestjs/config';
 import { multiImagePrompt } from './prompt';
@@ -48,6 +50,52 @@ export class AiGenerationsService {
     } catch (error) {
       console.error(
         'Error calling Replicate API:',
+        error.response?.data || error.message,
+      );
+      throw error;
+    }
+  }
+
+  private async createPrediction(model: string, input: any): Promise<string> {
+    try {
+      const response = await axios.post(
+        `${this.baseUrl}/${model}/predictions`,
+        { input },
+        {
+          headers: {
+            Authorization: `Bearer ${this.apiToken}`,
+            'Content-Type': 'application/json',
+          },
+        },
+      );
+
+      // Return the prediction ID
+      return response.data.id;
+    } catch (error) {
+      console.error(
+        'Error creating prediction:',
+        error.response?.data || error.message,
+      );
+      throw error;
+    }
+  }
+
+  async checkPredictionStatus(predictionId: string): Promise<any> {
+    try {
+      const response = await axios.get(
+        `https://api.replicate.com/v1/predictions/${predictionId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${this.apiToken}`,
+            'Content-Type': 'application/json',
+          },
+        },
+      );
+
+      return response.data;
+    } catch (error) {
+      console.error(
+        'Error checking prediction status:',
         error.response?.data || error.message,
       );
       throw error;
@@ -178,7 +226,7 @@ export class AiGenerationsService {
       messages: [
         {
           role: 'system',
-          content: `You are an elite brand designer specializing in luxury and iconic logo creation for global brands. For each prompt, craft a highly detailed, modern, and visually striking logo description that embodies the company’s unique identity at the highest level, akin to the design work for brands like LVMH, Lamborghini, or Apple.
+          content: `You are an elite brand designer specializing in luxury and iconic logo creation for global brands. For each prompt, craft a highly detailed, modern, and visually striking logo description that embodies the company's unique identity at the highest level, akin to the design work for brands like LVMH, Lamborghini, or Apple.
 
 Requirements for each logo prompt:
 
@@ -255,5 +303,83 @@ Reply only with the highly refined logo prompt in English, no additional explana
     return {
       urls,
     };
+  }
+
+  async generateTextToVideo(
+    textToVideoDto: TextToVideoDto,
+    userId: string,
+  ): Promise<GenerationResponse> {
+    const { prompt, end_image } = textToVideoDto;
+
+    try {
+      const input: any = { prompt };
+      if (end_image) {
+        input.end_image = end_image;
+      }
+
+      const output = await this.callReplicateApi('kwaivgi/kling-v1.6-pro', input);
+
+      // Download the output and save it to /public/videos
+      const response = await axios.get(output, { responseType: 'stream' });
+      const fileName = `${userId}-text-to-video-${Date.now()}.mp4`;
+      const filePath = join(process.cwd(), 'public', 'videos', fileName);
+      
+      // Ensure the directory exists
+      const dir = join(process.cwd(), 'public', 'videos');
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      
+      const writer = fs.createWriteStream(filePath);
+      response.data.pipe(writer);
+
+      return {
+        url: `${process.env.BACKEND || 'http://localhost:8001'}/videos/${fileName}`,
+      };
+    } catch (error) {
+      console.error('Error generating text to video:', error);
+      throw new InternalServerErrorException(
+        'Error generating text to video: ' + error.message,
+      );
+    }
+  }
+
+  async generateImageToVideo(
+    imageToVideoDto: ImageToVideoDto,
+    userId: string,
+  ): Promise<GenerationResponse> {
+    const { prompt, start_image, end_image } = imageToVideoDto;
+
+    try {
+      const input: any = { prompt, start_image };
+      if (end_image) {
+        input.end_image = end_image;
+      }
+
+      const output = await this.callReplicateApi('kwaivgi/kling-v1.6-pro', input);
+
+      // Download the output and save it to /public/videos
+      const response = await axios.get(output, { responseType: 'stream' });
+      const fileName = `${userId}-image-to-video-${Date.now()}.mp4`;
+      const filePath = join(process.cwd(), 'public', 'videos', fileName);
+      
+      // Ensure the directory exists
+      const dir = join(process.cwd(), 'public', 'videos');
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      
+      const writer = fs.createWriteStream(filePath);
+      response.data.pipe(writer);
+
+      return {
+        url: `${process.env.BACKEND || 'http://localhost:8001'}/videos/${fileName}`,
+      };
+    } catch (error) {
+      console.error('Error generating image to video:', error);
+      throw new InternalServerErrorException(
+        'Error generating image to video: ' + error.message,
+      );
+    }
   }
 }

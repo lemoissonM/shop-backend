@@ -109,11 +109,21 @@ export class PaymentService {
       if (!shop) {
         throw new NotFoundException('Shop not found');
       }
+    } else if (paymentRequestDto.type === PaymentType.TRAINING_REGISTRATION) {
+      if (!paymentRequestDto.trainingRegistrationId) {
+        throw new BadRequestException(
+          'Training registration ID is required for training registration payment',
+        );
+      }
     }
 
     // Check if payment amount is a valid number
     if (isNaN(paymentRequestDto.amount) || paymentRequestDto.amount <= 0) {
       throw new BadRequestException('Invalid payment amount');
+    }
+
+    if (paymentRequestDto.type === PaymentType.TRAINING_REGISTRATION) {
+      paymentRequestDto.amount = 50;
     }
 
     // Create the payment record
@@ -128,6 +138,7 @@ export class PaymentService {
       phoneNumber: paymentRequestDto.phoneNumber,
       currency: currency,
       metadata: {},
+      trainingRegistrationId: paymentRequestDto.trainingRegistrationId,
     });
 
     // Save the payment to get an ID

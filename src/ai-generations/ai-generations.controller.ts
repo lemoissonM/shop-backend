@@ -1,9 +1,11 @@
-import { Body, Controller, Post, UseGuards, Req } from '@nestjs/common';
+import { Body, Controller, Post, UseGuards, Req, Get, Param } from '@nestjs/common';
 import { AiGenerationsService } from './ai-generations.service';
 import { MultiImageDto } from './dto/multi-image.dto';
 import { ProfessionalPhotoDto } from './dto/professional-photo.dto';
 import { ChangeHairstyleDto } from './dto/change-hairstyle.dto';
 import { UpscaleImageDto } from './dto/upscale-image.dto';
+import { TextToVideoDto } from './dto/text-to-video.dto';
+import { ImageToVideoDto } from './dto/image-to-video.dto';
 import { GenerationResponse } from './interfaces/generation-response.interface';
 import {
   CheckCreditGuard,
@@ -100,5 +102,47 @@ export class AiGenerationsController {
       CreditType.GENERATION_CREDITS,
     );
     return this.aiGenerationsService.generateLogo(logoDto, req.user.userId);
+  }
+
+  @Post('text-to-video')
+  @UseGuards(JwtAuthGuard, CheckCreditGuard)
+  @RequireCredits(200, CreditType.GENERATION_CREDITS)
+  async generateTextToVideo(
+    @Body() textToVideoDto: TextToVideoDto,
+    @Req() req,
+  ): Promise<GenerationResponse> {
+    await this.creditService.deductCredits(
+      req.user.userId,
+      200,
+      CreditType.GENERATION_CREDITS,
+    );
+    return this.aiGenerationsService.generateTextToVideo(
+      textToVideoDto,
+      req.user.userId,
+    );
+  }
+
+  @Post('image-to-video')
+  @UseGuards(JwtAuthGuard, CheckCreditGuard)
+  @RequireCredits(250, CreditType.GENERATION_CREDITS)
+  async generateImageToVideo(
+    @Body() imageToVideoDto: ImageToVideoDto,
+    @Req() req,
+  ): Promise<GenerationResponse> {
+    await this.creditService.deductCredits(
+      req.user.userId,
+      250,
+      CreditType.GENERATION_CREDITS,
+    );
+    return this.aiGenerationsService.generateImageToVideo(
+      imageToVideoDto,
+      req.user.userId,
+    );
+  }
+
+  @Get('prediction/:id')
+  @UseGuards(JwtAuthGuard)
+  async checkPredictionStatus(@Param('id') predictionId: string) {
+    return this.aiGenerationsService.checkPredictionStatus(predictionId);
   }
 }

@@ -34,4 +34,12 @@ export class CurrencyConversionService {
     }
     return amount / rate;
   }
+
+  convertToCurrency(amount: number, toCurrency: string): number {
+    const rate = this.rates[toCurrency.toUpperCase()];
+    if (!rate) {
+      throw new Error(`Currency ${toCurrency} is not supported.`);
+    }
+    return amount * rate;
+  }
 }

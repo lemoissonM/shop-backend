@@ -32,6 +32,11 @@ import { FileModule } from '../file/file.module';
     CurrencyConversionService,
     CheckCreditGuard,
   ],
-  exports: [AiGenerationsService, PaymentService, CreditService],
+  exports: [
+    AiGenerationsService,
+    PaymentService,
+    CreditService,
+    CurrencyConversionService,
+  ],
 })
 export class AiGenerationsModule {}

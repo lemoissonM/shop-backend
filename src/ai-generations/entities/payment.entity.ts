@@ -19,6 +19,7 @@ export enum PaymentType {
   CREDIT_PURCHASE = 'credit_purchase',
   TOKEN_PURCHASE = 'token_purchase',
   ONE_TIME_SHOP = 'one_time_shop',
+  TRAINING_REGISTRATION = 'training_registration',
 }
 
 @Entity()
@@ -61,6 +62,9 @@ export class AiGenerationPayment {
 
   @Column({ nullable: true })
   shopId: string;
+
+  @Column({ nullable: true })
+  trainingRegistrationId: string;
 
   @Column({ type: 'json', nullable: true })
   metadata: Record<string, any>;

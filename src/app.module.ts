@@ -21,6 +21,7 @@ import { Product } from './product/product.entity';
 import { Sale } from './sale/sale.entity';
 import { Purchase } from './purchase/purchase.entity';
 import { BulkSale } from './bulksale/bulksale.entity';
+import { TrainingRegistration, TrainingPayment } from './trainings/trainings.entity';
 import {
   ConfigService,
   ConfigModule as NestConfigModule,
@@ -28,6 +29,7 @@ import {
 import { JwtModule } from '@nestjs/jwt';
 import { AiGenerationsModule } from './ai-generations/ai-generations.module';
 import { FileModule } from './file/file.module';
+import { TrainingsModule } from './trainings/trainings.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 
@@ -64,7 +66,8 @@ import { join } from 'path';
     AuthModule,
     UserModule,
     LLMMessageModule,
-    TypeOrmModule.forFeature([Product, Sale, Purchase, BulkSale]),
+    TrainingsModule,
+    TypeOrmModule.forFeature([Product, Sale, Purchase, BulkSale, TrainingRegistration, TrainingPayment]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
