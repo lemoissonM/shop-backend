@@ -52,6 +52,8 @@ export class TrainingsService {
           createRegistrationDto.correspondent.currency || 'USD',
         ),
         phoneNumber: createRegistrationDto.phone,
+        correspondent: createRegistrationDto.correspondent,
+        currency: createRegistrationDto.correspondent.currency || 'USD',
       };
 
       const payment = await this.paymentService.createPawaPayPayment(
