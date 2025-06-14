@@ -122,10 +122,6 @@ export class PaymentService {
       throw new BadRequestException('Invalid payment amount');
     }
 
-    if (paymentRequestDto.type === PaymentType.TRAINING_REGISTRATION) {
-      paymentRequestDto.amount = 50;
-    }
-
     // Create the payment record
     const payment = this.paymentRepository.create({
       userId,
@@ -435,7 +431,7 @@ export class PaymentService {
       userId,
       amount: paymentRequestDto.amount,
       status: PaymentStatus.PENDING,
-      type: PaymentType.CREDIT_PURCHASE, // Assuming credit purchase for now
+      type: paymentRequestDto.type || PaymentType.CREDIT_PURCHASE, // Assuming credit purchase for now
       credits: this.calculateCredits(paymentRequestDto.amount, currency),
       phoneNumber: paymentRequestDto.phoneNumber,
       currency: currency,

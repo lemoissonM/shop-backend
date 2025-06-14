@@ -54,7 +54,7 @@ export class TrainingsService {
         phoneNumber: createRegistrationDto.phone,
       };
 
-      const payment = await this.paymentService.createPayment(
+      const payment = await this.paymentService.createPawaPayPayment(
         userId,
         paymentRequestDto,
       );
